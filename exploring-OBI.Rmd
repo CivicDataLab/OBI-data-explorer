@@ -11,7 +11,7 @@ output:
       collapsed: no
 ---
 
-<br /> Last updated: `r format(Sys.time(), '%d %B, %Y')` (See [changelog](https://github.com/apoorv74/OBI-data-explorer/commits/master)).
+<br /> Last updated: `r format(Sys.time(), '%d %B, %Y')` (See [changelog](https://github.com/CivicDataLab/OBI-data-explorer/commits/master)).
 
 ```{r Report options, include=FALSE}
 # Options for building this document
