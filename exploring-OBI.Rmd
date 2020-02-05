@@ -30,8 +30,10 @@ knitr::opts_chunk$set(
 
 ### `r emo::ji("notebook")` Why another Notebook ?
 ```{r Load Libraries, message=FALSE, warning=FALSE, include=FALSE}
-packages_required <- c("ckanr","stringr","dplyr","DT","listviewer","ggplot2","ggalt", "emo")
+packages_required <- c("ckanr","stringr","dplyr","DT","listviewer","ggplot2","ggalt", "emo", "purrr")
 lapply(packages_required, require, character.only=TRUE)
+
+source("utils/helpers.R")
 ```
 
 The objective of this notebook is to demonstrate the exploration of the [OpenBudgetsIndia](openbudgetsindia.org/) (OBI) platform right from our `r emo::ji("heart")` programming environment, in this case `R`. 
@@ -56,7 +58,33 @@ org_connect <- ckanr::src_ckan(url = org_url)
 ckanr::ckan_version()
 ```
 
-### Step 2 - `r emo::ji("building")` Exploring an organisation
+### Step 2 - `r emo::ji("money")` Exploring the Union Budget 2020 datasets
+
+All the datasets under released under Union Budget 2020 can be identified using the `union budget 2020` tag. LEt's check all the machine readable `CSV` datasets
+
+```{r union budget 2020 datasets, echo=TRUE, message=FALSE, warning=FALSE}
+
+all_UB_2020_packages <- tag_show(id = 'union budget 2020', include_datasets = T)$packages
+
+all_UB_2020_resources <- purrr::map(all_UB_2020_packages,`[`,'resources')
+
+resource_master <- c()
+for(i in 1:length(all_UB_2020_resources)){
+  resource_master <- c(resource_master, all_UB_2020_resources[[i]]$resources)
+}
+
+all_UB_2020_datasets <- purrr::map(resource_master, `[`,c('name', 'description', 'format', 'url')) %>% dplyr::bind_rows()
+
+
+DT::datatable(
+  all_UB_2020_datasets[all_UB_2020_datasets$format == 'CSV',],
+  filter = 'top',
+  options = list(pageLength = 5, autoWidth = TRUE)
+)
+```
+
+
+### Step 3 - `r emo::ji("building")` Exploring an organisation
 
 In this exercise, we would like to see the budget allocation for the year 2020-21 within the Ministry of Environment, Forest and Climate Change. Ministries are considered as organisation in OBI, let's see if we can access the description of this organisation
 
@@ -68,7 +96,7 @@ ministry_details <- ckanr::organization_show(id = "ministry-of-environment-fores
 ministry_details$description[[1]] %>% stringr::str_to_sentence() %>% cat()
 ```
 
-### Step 3 - `r emo::ji("file")` Exploring datasets present within an organisation
+### Step 4 - `r emo::ji("file")` Exploring datasets present within an organisation
 
 Moving further, let's check the kind of datasets present within this org.
 ```{r explore datasets in an org, echo=TRUE, message=FALSE, warning=FALSE}
@@ -78,7 +106,7 @@ all_datasets
 
 This organsiation (or Ministry) has data from 2011/12 right till 2020/21. Since we're interested in the budget allocation for 2020/21, let us now see how we can access the data within this dataset (or a `package`)
 
-### Step 4 - `r emo::ji("e-mail")` Viewing a package
+### Step 5 - `r emo::ji("e-mail")` Viewing a package
 
 A package (or a dataset) contains several files within. For this analysis, we would like to get access to the tabular datasets or a **CSV** which has allocation details for several important budget heads. 
 
@@ -99,7 +127,7 @@ print(format_details)
 
 Note: All three formats can be accessed in a similar way. We shall fetch the `ID` of a particular file (or a `resource`) which will then be used for reading contents.
 
-### Step 5 - `r emo::ji("record")` Reading data from a file
+### Step 6 - `r emo::ji("record")` Reading data from a file
 
 Data can easily be exported as a data frame which is a suitable format for analysing this data. 
 
@@ -119,7 +147,7 @@ budget_data <- readr::read_csv("data/ministry-of-environment-forests-and-climate
 names(budget_data)
 ```
 
-### Step 6 - `r emo::ji("cook")` Preparing data for analysis
+### Step 7 - `r emo::ji("cook")` Preparing data for analysis
 
 For this analysis, we would like to see the change in allocation from the financial year 2018/19 to 2020/21. To prepare this dataset:
 
@@ -153,14 +181,18 @@ data_for_analysis$`Budget Difference` <- round(data_for_analysis$`Budget 2020-20
 data_for_analysis <- data_for_analysis[!data_for_analysis$Particulars %in% c('EAP Component'),]
 ```
 
-### Step 7 - `r emo::ji("research")` Exploring processed dataset
+### Step 8 - `r emo::ji("research")` Exploring processed dataset
 
 ```{r Table for exploration, echo=FALSE, message=FALSE, warning=FALSE}
-DT::datatable(data_for_analysis)
+DT::datatable(
+  data_for_analysis,
+  filter = 'top',
+  options = list(pageLength = 5, autoWidth = TRUE)
+)
 ```
 
 
-### Step 8 - `r emo::ji("spy")` Further exploration 
+### Step 9 - `r emo::ji("spy")` Further exploration 
 
 
 To check how the allocation has changed from 2018-19 to 2020-21:
@@ -180,7 +212,7 @@ prepare_dumbell('top')
 
 **Bottom 10 departments in terms of change in allocation of budget**
 
-```{r}
+```{r bottom dumbell, echo=FALSE, message=FALSE, warning=FALSE}
 prepare_dumbell('bottom')
 ```
 
